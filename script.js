@@ -178,6 +178,7 @@ function makePdf(r) {
   const { jsPDF } = window.jspdf, doc = new jsPDF({ unit: "mm", format: "a4" });
   const L = 15, W = 180, info = kelasInfo(r.kelas);
   // Kop mengikuti contoh sekolah
+  try { if (typeof LOGO_DATA !== "undefined") doc.addImage(LOGO_DATA, "PNG", L, 6, 21, 21 * LOGO_RATIO); } catch (e) {}   // logo kiri atas
   doc.setFont("helvetica", "bold").setFontSize(12).text(SCHOOL_NAME, 105, 16, { align: "center" });
   doc.setFontSize(15).text("LEMBAR VALIDASI PROYEK", 105, 24, { align: "center" });
   doc.setLineWidth(0.6).line(L, 28, L + W, 28);
