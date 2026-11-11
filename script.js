@@ -3,7 +3,7 @@
    ===================================================== */
 
 // >>> KONFIGURASI <<<
-const GOOGLE_APPS_SCRIPT_URL = "YOUR_APPS_SCRIPT_WEB_APP_URL"; // URL Web App (berakhiran /exec)
+const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwemt-9YNwUdm5ySApWvP9jBdJdfk12gyxGyK6IUx1LUDuHFkXa4ROpEw2TRe5LeZ4b-A/exec"; // URL Web App (berakhiran /exec)
 const SCHOOL_NAME = "NAMA SEKOLAH";                            // tampil di kop PDF
 const REPORT_LABELS = ["Laporan 1", "Laporan 2"];              // ubah, mis. ["Laporan Proyek", "Laporan Individu"]
 const MAX_MB = 10;                                             // harus sama dengan MAX_BYTES di Code.gs
