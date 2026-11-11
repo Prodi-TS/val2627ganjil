@@ -219,16 +219,17 @@ function makePdf(r) {
   });
 
   // Validasi Kepala Program Studi (tanpa QR)
-  const ky = top + 2 * (blockH + 5), kh = 38;
+  const ky = top + 2 * (blockH + 5), kh = 42;
   doc.setDrawColor(120).setLineWidth(0.3).rect(L, ky, W, kh);
-  doc.setFont("helvetica", "bold").setFontSize(12).text("Validasi Kepala Program Studi", L + 4, ky + 8);
-  doc.setFont("helvetica", "normal").setFontSize(9).text(doc.splitTextToSize(info.prodi || "-", 56), L + 4, ky + 14);
+  doc.setFont("helvetica", "bold").setFontSize(12);
+  doc.text("Validasi", L + 4, ky + 8); doc.text("Kepala Program Studi", L + 4, ky + 14);   // dua baris agar tidak menabrak kotak tanda tangan
+  doc.setFont("helvetica", "normal").setFontSize(9).text(doc.splitTextToSize(info.prodi || "-", 54), L + 4, ky + 21);
   const kx = L + 62, kw = W - 66;
-  doc.rect(kx, ky + 3, kw, 20);
-  doc.setFontSize(9).text("Tanda tangan", kx + 2, ky + 7);
-  doc.line(kx, ky + 29, kx + kw * 0.7, ky + 29);
-  doc.text(`( ${info.kaprodi || "Kepala Program Studi"} )`, kx, ky + 33);
-  doc.text("Tanggal: ........................", kx, ky + 37);
+  doc.rect(kx, ky + 3, kw, 22);
+  doc.setFontSize(9).text("Tanda tangan", kx + 2, ky + 8);
+  doc.line(kx, ky + 31, kx + kw * 0.7, ky + 31);
+  doc.text(`( ${info.kaprodi || "Kepala Program Studi"} )`, kx, ky + 35.5);
+  doc.text("Tanggal: ........................", kx, ky + 39.5);
   doc.setFontSize(8).setTextColor(100).text("Dokumen dibuat otomatis oleh sistem. Cetak dan minta tanda tangan guru yang bersangkutan.", 105, 289, { align: "center" });
   doc.save(`Lembar-Validasi_${r.nis}_${String(r.nama).replace(/\s+/g, "-")}.pdf`);
 }
