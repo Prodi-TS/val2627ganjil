@@ -50,7 +50,7 @@ button:disabled { opacity:.6; cursor:wait; }
 .check input { width:22px; min-height:0; height:22px; flex:none; margin-top:.15rem; }
 
 /* Rekap guru */
-.tabs { grid-template-columns:repeat(3, 1fr); }
+.tabs { grid-template-columns:repeat(2, 1fr); }
 .tabs button { font-size:.8rem; padding:.4rem .25rem; }
 .rekap-head { display:flex; justify-content:space-between; align-items:center; gap:.5rem; flex-wrap:wrap; }
 .rekap-head h2 { margin:0; }
