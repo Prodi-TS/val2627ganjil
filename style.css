@@ -71,3 +71,9 @@ button:disabled { opacity:.6; cursor:wait; }
 
 .warn.info { background:#e6f0ff; color:#14325e; border-color:#9dbdf0; border-left-color:#3b78d8; }
 @media (prefers-color-scheme: dark) { .warn.info { background:#16284a; color:#bcd4ff; border-color:#2c4a82; border-left-color:#3b78d8; } }
+
+/* Pilihan tampilan rekap guru */
+.seg { display:grid; grid-template-columns:1fr 1fr; gap:4px; background:var(--line); padding:4px; border-radius:12px; margin:.6rem 0; }
+.seg button { border:0; background:none; color:var(--muted); min-height:40px; font-size:.85rem; }
+.seg button.on { background:var(--surface); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.15); }
+.class-card em { font-style:normal; font-size:.78rem; color:var(--muted); }

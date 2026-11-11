@@ -244,7 +244,7 @@ function guruReset() {
 async function loadRekap(pw) {
   const d = await post({ action: "report", password: pw });
   if (!d.success) throw new Error(d.error || "Gagal memuat rekap.");
-  state.rekap = d; state.gpw = pw; renderRekap();
+  state.rekap = d; state.gpw = pw; state.view = state.view || "kelas"; renderRekap();
 }
 async function onGuru(e) {
   e.preventDefault();
@@ -258,35 +258,43 @@ async function onGuru(e) {
   finally { state.busy = false; $("btnGuru").disabled = false; $("btnGuru").textContent = "Lihat rekap"; }
 }
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+// Tampilan rekap: "kelas" (untuk walas; guru Proyek 1 tiap kelas sama) atau "guru2" (guru Proyek 2, bisa beda dalam satu kelas)
+const viewKey = (s) => (state.view === "guru2" ? s.guru2 : s.kelas);
 function renderRekap() {
-  const d = state.rekap, sel = $("gKelas").value;
+  const d = state.rekap, v = state.view || "kelas", sel = $("gKelas").value;
+  const groups = v === "guru2" ? d.gurus.map((g) => ({ key: g.guru, label: g.guru, total: g.total, sudah: g.sudah, belum: g.belum }))
+    : d.classes.map((c) => ({ key: c.kelas, label: c.kelas, total: c.total, sudah: c.sudah, belum: c.belum, sub: c.guru1 ? "Guru Proyek 1: " + c.guru1 : "" }));
   $("guruLoginBox").hidden = true; $("rekapBox").hidden = false;
+  $("rekapTitle").textContent = v === "guru2" ? "Rekap per guru Proyek 2" : "Rekap per kelas";
+  document.querySelectorAll("#viewSeg button").forEach((b) => b.classList.toggle("on", b.dataset.view === v));
   $("rekapTime").textContent = "Diperbarui: " + new Date(d.generatedAt).toLocaleString("id-ID");
-  const all = d.classes.reduce((a, c) => ({ kelas: "Semua kelas", total: a.total + c.total, sudah: a.sudah + c.sudah, belum: a.belum + c.belum }), { total: 0, sudah: 0, belum: 0 });
-  const card = (c, key) => `<button type="button" class="class-card${sel === key ? " on" : ""}" data-k="${esc(key)}"><b>${esc(c.kelas)}</b><span>${c.sudah} dari ${c.total} sudah</span><i class="bar"><i style="width:${pct(c.sudah, c.total)}%"></i></i><small>${c.belum} belum · ${pct(c.sudah, c.total)}%</small></button>`;
-  $("classCards").innerHTML = card(all, "") + d.classes.map((c) => card(c, c.kelas)).join("");
+  const all = groups.reduce((a, c) => ({ label: v === "guru2" ? "Semua guru" : "Semua kelas", total: a.total + c.total, sudah: a.sudah + c.sudah, belum: a.belum + c.belum }), { total: 0, sudah: 0, belum: 0 });
+  const card = (c, key) => `<button type="button" class="class-card${sel === key ? " on" : ""}" data-k="${esc(key)}"><b>${esc(c.label)}</b>${c.sub ? `<em>${esc(c.sub)}</em>` : ""}<span>${c.sudah} dari ${c.total} sudah</span><i class="bar"><i style="width:${pct(c.sudah, c.total)}%"></i></i><small>${c.belum} belum · ${pct(c.sudah, c.total)}%</small></button>`;
+  $("classCards").innerHTML = card(all, "") + groups.map((c) => card(c, c.key)).join("");
   $("classCards").querySelectorAll(".class-card").forEach((b) => b.addEventListener("click", () => { $("gKelas").value = b.dataset.k; renderRekap(); }));
-  $("gKelas").innerHTML = `<option value="">Semua kelas</option>` + d.classes.map((c) => `<option>${esc(c.kelas)}</option>`).join("");
-  $("gKelas").value = d.classes.some((c) => c.kelas === sel) ? sel : "";
+  $("gKelas").setAttribute("aria-label", v === "guru2" ? "Guru Proyek 2" : "Kelas");
+  $("gKelas").innerHTML = `<option value="">${all.label}</option>` + groups.map((c) => `<option>${esc(c.key)}</option>`).join("");
+  $("gKelas").value = groups.some((c) => c.key === sel) ? sel : "";
   renderRekapList();
 }
 function filteredRekap() {
   const k = $("gKelas").value, st = $("gStatus").value, q = $("gSearch").value.trim().toLowerCase();
   return state.rekap.students
-    .filter((s) => (!k || s.kelas === k) && (!st || (st === "sudah") === s.sudah) && (!q || (s.nama + " " + s.nis).toLowerCase().includes(q)))
+    .filter((s) => (!k || viewKey(s) === k) && (!st || (st === "sudah") === s.sudah) && (!q || (s.nama + " " + s.nis).toLowerCase().includes(q)))
     .sort((a, b) => a.sudah - b.sudah || a.kelas.localeCompare(b.kelas) || a.nama.localeCompare(b.nama)); // yang belum di atas
 }
 function renderRekapList() {
   const rows = filteredRekap();
   $("gCount").textContent = `${rows.length} siswa ditampilkan`;
   $("gList").innerHTML = rows.length
-    ? rows.map((s) => `<li><span><b>${esc(s.nama)}</b><small>${esc(s.kelas)} · ${esc(s.nis)}</small></span><span class="badge ${s.sudah ? "ok" : "no"}">${s.sudah ? "Sudah" + (s.pdf ? " · PDF ✓" : "") + (s.versi > 1 ? " · v" + s.versi : "") : "Belum"}</span></li>`).join("")
+    ? rows.map((s) => `<li><span><b>${esc(s.nama)}</b><small>${esc(s.kelas)} · ${esc(s.nis)}${state.view === "guru2" ? "" : ""}</small></span><span class="badge ${s.sudah ? "ok" : "no"}">${s.sudah ? "Sudah" + (s.pdf ? " · PDF ✓" : "") + (s.versi > 1 ? " · v" + s.versi : "") : "Belum"}</span></li>`).join("")
     : `<li><span class="hint">Tidak ada siswa yang cocok.</span></li>`;
 }
 function belumText() {
-  const k = $("gKelas").value;
-  const rows = state.rekap.students.filter((s) => !s.sudah && (!k || s.kelas === k)).sort((a, b) => a.kelas.localeCompare(b.kelas) || a.nama.localeCompare(b.nama));
-  return `Belum mengumpulkan laporan ${k || "(semua kelas)"}: ${rows.length} siswa\n` + rows.map((s, i) => `${i + 1}. ${s.nama}${k ? "" : " (" + s.kelas + ")"}`).join("\n");
+  const k = $("gKelas").value, g2 = state.view === "guru2";
+  const rows = state.rekap.students.filter((s) => !s.sudah && (!k || viewKey(s) === k)).sort((a, b) => a.kelas.localeCompare(b.kelas) || a.nama.localeCompare(b.nama));
+  const title = k ? (g2 ? `guru Proyek 2 ${k}` : k) : (g2 ? "(semua guru)" : "(semua kelas)");
+  return `Belum mengumpulkan laporan ${title}: ${rows.length} siswa\n` + rows.map((s, i) => `${i + 1}. ${s.nama}${k && !g2 ? "" : " (" + s.kelas + ")"}`).join("\n");
 }
 
 /* ---------- Shortlink (#/KODE) -> alihkan ke Drive ---------- */
@@ -318,6 +326,7 @@ function init() {
   $("guruForm").addEventListener("submit", onGuru);
   $("btnLogout").addEventListener("click", guruReset);
   $("btnRefresh").addEventListener("click", async () => { try { await loadRekap(state.gpw); toast("Rekap diperbarui ✓"); } catch (ex) { toast(ex.message, true); } });
+  document.querySelectorAll("#viewSeg button").forEach((b) => b.addEventListener("click", () => { state.view = b.dataset.view; $("gKelas").value = ""; renderRekap(); }));
   ["gKelas", "gStatus"].forEach((id) => $(id).addEventListener("change", renderRekap));
   $("gSearch").addEventListener("input", renderRekapList);
   $("btnCopyBelum").addEventListener("click", async () => { try { await navigator.clipboard.writeText(belumText()); toast("Daftar disalin ✓"); } catch (e) { toast("Gagal menyalin. Salin manual dari daftar.", true); } });

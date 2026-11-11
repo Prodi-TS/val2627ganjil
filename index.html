@@ -80,8 +80,12 @@
         </form>
       </div>
       <div id="rekapBox" hidden>
-        <div class="rekap-head"><h2>Rekap per kelas</h2><div class="row2"><button type="button" id="btnRefresh">Segarkan</button><button type="button" id="btnLogout">Keluar</button></div></div>
+        <div class="rekap-head"><h2 id="rekapTitle">Rekap per kelas</h2><div class="row2"><button type="button" id="btnRefresh">Segarkan</button><button type="button" id="btnLogout">Keluar</button></div></div>
         <p class="hint" id="rekapTime"></p>
+        <div class="seg" id="viewSeg" role="group" aria-label="Tampilkan rekap berdasarkan">
+          <button type="button" data-view="kelas" class="on">Per kelas (walas)</button>
+          <button type="button" data-view="guru2">Per guru Proyek 2</button>
+        </div>
         <div id="classCards" class="class-cards"></div>
         <div class="filters">
           <select id="gKelas" aria-label="Kelas"></select>
