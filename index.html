@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Validasi Laporan Proyek</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top"><h1>📑 Validasi Laporan Proyek</h1></header>
+  <main>
+    <nav class="tabs" aria-label="Menu">
+      <button type="button" data-mode="submit" class="on">Kumpulkan Laporan</button>
+      <button type="button" data-mode="report">Laporan Saya</button>
+    </nav>
+    <!-- Pengalihan shortlink (dari QR) -->
+    <section id="s-redirect" class="step" hidden>
+      <p id="redirectMsg" class="lead">Membuka laporan…</p>
+    </section>
+
+    <!-- 1. NIS -->
+    <section id="s-nis" class="step">
+      <h2 id="nisTitle">Masukkan NIS</h2>
+      <p class="hint" id="nisHint"></p>
+      <div class="warn" id="nisWarn" role="note"><b>⚠️ Laporan hanya bisa diunggah 1 kali.</b><br>Siapkan 2 file PDF yang sudah final sebelum mulai. Setelah dikirim, data dikunci.</div>
+      <form id="nisForm" class="stack" novalidate>
+        <label>NIS <input id="nis" inputmode="numeric" autocomplete="off" placeholder="mis. 0012345" required></label>
+        <label id="pinWrap" hidden>PIN <input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN dari guru"></label>
+        <p class="error" id="nisError" role="alert" hidden></p>
+        <button class="primary" id="btnNis" type="submit">Lanjut</button>
+      </form>
+    </section>
+
+    <!-- 2. Konfirmasi -->
+    <section id="s-confirm" class="step" hidden>
+      <h2>Konfirmasi data</h2>
+      <dl class="info" id="confirmInfo"></dl>
+      <p class="hint">Pastikan data di atas adalah milikmu.</p>
+      <div class="warn" role="note"><b>⚠️ Hanya bisa upload 1 kali.</b> Pastikan file PDF kamu sudah final sebelum lanjut.</div>
+      <div class="row">
+        <button class="ghost" id="btnNotMe" type="button">Bukan saya</button>
+        <button class="primary" id="btnYes" type="button">Ya, ini saya</button>
+      </div>
+    </section>
+
+    <!-- 3. Form laporan -->
+    <section id="s-form" class="step" hidden>
+      <h2>Data laporan</h2>
+      <div class="warn" role="note"><b>⚠️ Hanya bisa upload 1 kali!</b>
+        <ul><li>Cek judul masing-masing laporan dan pastikan file benar.</li><li>Pastikan Laporan 1 dan 2 tidak tertukar dengan gurunya.</li><li>Salah kirim? Kamu harus minta guru/admin membuka kunci.</li></ul></div>
+      <form id="repForm" class="stack" novalidate>
+        <fieldset class="rep"><legend id="lg1">Laporan 1</legend>
+          <label>Judul laporan <input id="judul1" maxlength="150" placeholder="Tulis judul laporan ini"></label>
+          <p class="teacher" id="gt1"></p>
+          <label>File PDF (maks. 10 MB) <input type="file" id="file1" accept="application/pdf,.pdf"></label>
+        </fieldset>
+        <fieldset class="rep"><legend id="lg2">Laporan 2</legend>
+          <label>Judul laporan <input id="judul2" maxlength="150" placeholder="Tulis judul laporan ini"></label>
+          <p class="teacher" id="gt2"></p>
+          <label>File PDF (maks. 10 MB) <input type="file" id="file2" accept="application/pdf,.pdf"></label>
+        </fieldset>
+        <label class="check"><input type="checkbox" id="agree"> <span>Saya sudah memeriksa kedua judul dan kedua file, dan saya mengerti laporan <b>hanya bisa diunggah 1 kali</b>.</span></label>
+        <p class="error" id="formError" role="alert" hidden></p>
+        <p id="progress" class="progress" role="status" hidden></p>
+        <button class="primary" id="btnSend" type="submit" disabled>Kirim laporan</button>
+      </form>
+    </section>
+
+    <!-- 4. Hasil -->
+    <section id="s-result" class="step" hidden>
+      <h2 id="resultTitle">✅ Laporan terkumpul</h2>
+      <dl class="info" id="resultInfo"></dl>
+      <div id="links" class="links"></div>
+      <button class="primary" id="btnPdf" type="button">⬇️ Unduh PDF Lembar Validasi</button>
+      <p class="hint">Cetak PDF, lalu minta tanda tangan guru pada kotak yang tersedia.</p>
+      <button class="ghost" id="btnDone" type="button">Selesai</button>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <!-- Library (CDN). Untuk offline, unduh file ini ke folder lib/ dan ganti alamatnya -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
