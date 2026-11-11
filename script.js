@@ -170,6 +170,8 @@ function kelasInfo(kelas) {
   else if (/\bTKJ\b/.test(k)) p = { prodi: TJKT, konsentrasi: "Teknik Komputer dan Jaringan" };
   else if (/\bRPL\b/.test(k)) p = { prodi: "PENGEMBANGAN PERANGKAT LUNAK DAN GIM", konsentrasi: "Rekayasa Perangkat Lunak" };
   else if (/\bDKV\b/.test(k)) p = { prodi: "DESAIN KOMUNIKASI VISUAL", konsentrasi: "Desain Komunikasi Visual" };
+  const kaprodi = { TJKT: "Assa Kesthy Rohana, S.Pd., Gr.", PPLG: "Adythia Esha Nugraha, S.Kom., Gr.", DKV: "Aditya Wardana, S.Kom., Gr." };
+  p.kaprodi = p.prodi === TJKT ? kaprodi.TJKT : p.prodi.startsWith("PENGEMBANGAN") ? kaprodi.PPLG : p.prodi.startsWith("DESAIN") ? kaprodi.DKV : "";
   const t = /^\s*XII\b/.test(k) ? "5 (lima)" : /^\s*XI\b/.test(k) ? "3 (tiga)" : /^\s*X\b/.test(k) ? "1 (satu)" : "";
   return Object.assign(p, { semester: t });
 }
@@ -189,12 +191,12 @@ function makePdf(r) {
     doc.setFont("helvetica", "bold"); const lines = doc.splitTextToSize(String(v || "-"), W - 46); doc.text(lines, L + 44, y); y += 5.8 * lines.length;
   };
   row("NAMA", r.nama); row("KELAS", r.kelas); row("NIS", r.nis);
-  row("Program Studi", info.prodi); row("Konsentrasi Keahlian", info.konsentrasi);
+  row("Program Studi", info.prodi); row("Konsentrasi Keahlian", String(info.konsentrasi).toUpperCase());
   doc.setFont("helvetica", "normal").setFontSize(10.5);
   y += 1; doc.text(`pada semester ${info.semester || "-"} tahun ajaran ${TAHUN_AJARAN} dengan rincian sebagai berikut:`, L, y);
 
   // Dua blok laporan: QR di kiri, kotak tanda tangan guru di kanan
-  const top = y + 6, blockH = 90;
+  const top = y + 6, blockH = 74;
   r.codes.forEach((code, i) => {
     const by = top + i * (blockH + 5), url = shortUrl(code);
     doc.setDrawColor(120).setLineWidth(0.3).rect(L, by, W, blockH);
@@ -204,17 +206,29 @@ function makePdf(r) {
     doc.setFont("helvetica", "normal").setFontSize(10).text("Guru: " + r.guru[i], L + 4, by + 14);
     doc.setFont("helvetica", "bold").text(doc.splitTextToSize("Judul: " + r.judul[i], W - 8).slice(0, 2), L + 4, by + 20);
     doc.setFont("helvetica", "normal");
-    doc.addImage(qrPng(url, 400), "PNG", L + 4, by + 30, 44, 44);
-    doc.setFontSize(8).text(doc.splitTextToSize(url, 58), L + 4, by + 78);
-    doc.text("Pindai QR / buka tautan untuk melihat laporan", L + 4, by + 85);
+    doc.addImage(qrPng(url, 400), "PNG", L + 4, by + 28, 34, 34);
+    doc.setFontSize(7.5).text(doc.splitTextToSize(url, 58), L + 4, by + 65);
+    doc.setFontSize(7).text("Pindai QR / buka tautan untuk melihat laporan", L + 4, by + 71);
     const sx = L + 62, sw = W - 66;
-    doc.setFontSize(10).text("Validasi Guru", sx, by + 33);
-    doc.rect(sx, by + 36, sw, 34);
-    doc.setFontSize(9).text("Tanda tangan", sx + 2, by + 40);
-    doc.line(sx, by + 77, sx + sw * 0.7, by + 77);
-    doc.text(`( ${r.guru[i]} )`, sx, by + 82);
-    doc.text("Tanggal: ........................", sx, by + 87);
+    doc.setFontSize(10).text("Validasi Guru", sx, by + 29);
+    doc.rect(sx, by + 31, sw, 24);
+    doc.setFontSize(9).text("Tanda tangan", sx + 2, by + 35);
+    doc.line(sx, by + 61, sx + sw * 0.7, by + 61);
+    doc.text(`( ${r.guru[i]} )`, sx, by + 66);
+    doc.text("Tanggal: ........................", sx, by + 71);
   });
+
+  // Validasi Kepala Program Studi (tanpa QR)
+  const ky = top + 2 * (blockH + 5), kh = 38;
+  doc.setDrawColor(120).setLineWidth(0.3).rect(L, ky, W, kh);
+  doc.setFont("helvetica", "bold").setFontSize(12).text("Validasi Kepala Program Studi", L + 4, ky + 8);
+  doc.setFont("helvetica", "normal").setFontSize(9).text(doc.splitTextToSize(info.prodi || "-", 56), L + 4, ky + 14);
+  const kx = L + 62, kw = W - 66;
+  doc.rect(kx, ky + 3, kw, 20);
+  doc.setFontSize(9).text("Tanda tangan", kx + 2, ky + 7);
+  doc.line(kx, ky + 29, kx + kw * 0.7, ky + 29);
+  doc.text(`( ${info.kaprodi || "Kepala Program Studi"} )`, kx, ky + 33);
+  doc.text("Tanggal: ........................", kx, ky + 37);
   doc.setFontSize(8).setTextColor(100).text("Dokumen dibuat otomatis oleh sistem. Cetak dan minta tanda tangan guru yang bersangkutan.", 105, 289, { align: "center" });
   doc.save(`Lembar-Validasi_${r.nis}_${String(r.nama).replace(/\s+/g, "-")}.pdf`);
 }
