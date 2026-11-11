@@ -262,7 +262,18 @@ const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
 const viewKey = (s) => (state.view === "guru2" ? s.guru2 : s.kelas);
 function renderRekap() {
   const d = state.rekap, v = state.view || "kelas", sel = $("gKelas").value;
-  const groups = v === "guru2" ? d.gurus.map((g) => ({ key: g.guru, label: g.guru, total: g.total, sudah: g.sudah, belum: g.belum }))
+  // Tema (kolom G) hanya untuk tampilan guru Proyek 2: satu guru bisa mengajar beda jenjang/tema
+  const temas = [...new Set(d.students.map((x) => x.tema || "Tanpa tema"))].sort();
+  const selTema = $("gTema").value;
+  $("gTema").hidden = v !== "guru2";
+  $("gTema").innerHTML = `<option value="">Semua tema</option>` + temas.map((t) => `<option>${esc(t)}</option>`).join("");
+  $("gTema").value = temas.includes(selTema) && v === "guru2" ? selTema : "";
+  const gAgg = {};
+  d.students.filter((x) => !$("gTema").value || (x.tema || "Tanpa tema") === $("gTema").value).forEach((x) => {
+    const g = gAgg[x.guru2] = gAgg[x.guru2] || { key: x.guru2, label: x.guru2, total: 0, sudah: 0, belum: 0 };
+    g.total++; if (x.sudah) g.sudah++; else g.belum++;
+  });
+  const groups = v === "guru2" ? Object.keys(gAgg).sort().map((k) => gAgg[k])
     : d.classes.map((c) => ({ key: c.kelas, label: c.kelas, total: c.total, sudah: c.sudah, belum: c.belum, sub: c.guru1 ? "Guru Proyek 1: " + c.guru1 : "" }));
   $("guruLoginBox").hidden = true; $("rekapBox").hidden = false;
   $("rekapTitle").textContent = v === "guru2" ? "Rekap per guru Proyek 2" : "Rekap per kelas";
@@ -280,20 +291,21 @@ function renderRekap() {
 function filteredRekap() {
   const k = $("gKelas").value, st = $("gStatus").value, q = $("gSearch").value.trim().toLowerCase();
   return state.rekap.students
-    .filter((s) => (!k || viewKey(s) === k) && (!st || (st === "sudah") === s.sudah) && (!q || (s.nama + " " + s.nis).toLowerCase().includes(q)))
+    .filter((s) => (!k || viewKey(s) === k) && (state.view !== "guru2" || !$("gTema").value || (s.tema || "Tanpa tema") === $("gTema").value) && (!st || (st === "sudah") === s.sudah) && (!q || (s.nama + " " + s.nis).toLowerCase().includes(q)))
     .sort((a, b) => a.sudah - b.sudah || a.kelas.localeCompare(b.kelas) || a.nama.localeCompare(b.nama)); // yang belum di atas
 }
 function renderRekapList() {
   const rows = filteredRekap();
   $("gCount").textContent = `${rows.length} siswa ditampilkan`;
   $("gList").innerHTML = rows.length
-    ? rows.map((s) => `<li><span><b>${esc(s.nama)}</b><small>${esc(s.kelas)} · ${esc(s.nis)}${state.view === "guru2" ? "" : ""}</small></span><span class="badge ${s.sudah ? "ok" : "no"}">${s.sudah ? "Sudah" + (s.pdf ? " · PDF ✓" : "") + (s.versi > 1 ? " · v" + s.versi : "") : "Belum"}</span></li>`).join("")
+    ? rows.map((s) => `<li><span><b>${esc(s.nama)}</b><small>${esc(s.kelas)} · ${esc(s.nis)}${state.view === "guru2" ? " · " + esc(s.tema || "Tanpa tema") : ""}</small></span><span class="badge ${s.sudah ? "ok" : "no"}">${s.sudah ? "Sudah" + (s.pdf ? " · PDF ✓" : "") + (s.versi > 1 ? " · v" + s.versi : "") : "Belum"}</span></li>`).join("")
     : `<li><span class="hint">Tidak ada siswa yang cocok.</span></li>`;
 }
 function belumText() {
   const k = $("gKelas").value, g2 = state.view === "guru2";
-  const rows = state.rekap.students.filter((s) => !s.sudah && (!k || viewKey(s) === k)).sort((a, b) => a.kelas.localeCompare(b.kelas) || a.nama.localeCompare(b.nama));
-  const title = k ? (g2 ? `guru Proyek 2 ${k}` : k) : (g2 ? "(semua guru)" : "(semua kelas)");
+  const tm = g2 ? $("gTema").value : "";
+  const rows = state.rekap.students.filter((s) => !s.sudah && (!k || viewKey(s) === k) && (!tm || (s.tema || "Tanpa tema") === tm)).sort((a, b) => a.kelas.localeCompare(b.kelas) || a.nama.localeCompare(b.nama));
+  const title = (k ? (g2 ? `guru Proyek 2 ${k}` : k) : (g2 ? "(semua guru)" : "(semua kelas)")) + (tm ? ` tema ${tm}` : "");
   return `Belum mengumpulkan laporan ${title}: ${rows.length} siswa\n` + rows.map((s, i) => `${i + 1}. ${s.nama}${k && !g2 ? "" : " (" + s.kelas + ")"}`).join("\n");
 }
 
@@ -326,8 +338,8 @@ function init() {
   $("guruForm").addEventListener("submit", onGuru);
   $("btnLogout").addEventListener("click", guruReset);
   $("btnRefresh").addEventListener("click", async () => { try { await loadRekap(state.gpw); toast("Rekap diperbarui ✓"); } catch (ex) { toast(ex.message, true); } });
-  document.querySelectorAll("#viewSeg button").forEach((b) => b.addEventListener("click", () => { state.view = b.dataset.view; $("gKelas").value = ""; renderRekap(); }));
-  ["gKelas", "gStatus"].forEach((id) => $(id).addEventListener("change", renderRekap));
+  document.querySelectorAll("#viewSeg button").forEach((b) => b.addEventListener("click", () => { state.view = b.dataset.view; $("gKelas").value = ""; $("gTema").value = ""; renderRekap(); }));
+  ["gKelas", "gStatus", "gTema"].forEach((id) => $(id).addEventListener("change", renderRekap));
   $("gSearch").addEventListener("input", renderRekapList);
   $("btnCopyBelum").addEventListener("click", async () => { try { await navigator.clipboard.writeText(belumText()); toast("Daftar disalin ✓"); } catch (e) { toast("Gagal menyalin. Salin manual dari daftar.", true); } });
   window.addEventListener("hashchange", handleHash);
