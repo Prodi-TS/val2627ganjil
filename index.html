@@ -12,6 +12,7 @@
     <nav class="tabs" aria-label="Menu">
       <button type="button" data-mode="submit" class="on">Kumpulkan Laporan</button>
       <button type="button" data-mode="report">Laporan Saya</button>
+      <button type="button" data-mode="guru">Rekap Guru</button>
     </nav>
     <!-- Pengalihan shortlink (dari QR) -->
     <section id="s-redirect" class="step" hidden>
@@ -22,7 +23,7 @@
     <section id="s-nis" class="step">
       <h2 id="nisTitle">Masukkan NIS</h2>
       <p class="hint" id="nisHint"></p>
-      <div class="warn" id="nisWarn" role="note"><b>⚠️ Laporan hanya bisa diunggah 1 kali.</b><br>Siapkan 2 file PDF yang sudah final sebelum mulai. Setelah dikirim, data dikunci.</div>
+      <div class="warn" id="nisWarn" role="note"><b>⚠️ Upload cukup 1 kali.</b><br>Siapkan 2 file PDF yang sudah final dan periksa dulu sebelum mengirim. Upload ulang hanya jika perlu revisi.</div>
       <form id="nisForm" class="stack" novalidate>
         <label>NIS <input id="nis" inputmode="numeric" autocomplete="off" placeholder="mis. 0012345" required></label>
         <label id="pinWrap" hidden>PIN <input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN dari guru"></label>
@@ -36,7 +37,7 @@
       <h2>Konfirmasi data</h2>
       <dl class="info" id="confirmInfo"></dl>
       <p class="hint">Pastikan data di atas adalah milikmu.</p>
-      <div class="warn" role="note"><b>⚠️ Hanya bisa upload 1 kali.</b> Pastikan file PDF kamu sudah final sebelum lanjut.</div>
+      <div class="warn" role="note"><b>⚠️ Upload cukup 1 kali.</b> Pastikan file sudah final. Upload ulang hanya untuk revisi.</div>
       <div class="row">
         <button class="ghost" id="btnNotMe" type="button">Bukan saya</button>
         <button class="primary" id="btnYes" type="button">Ya, ini saya</button>
@@ -46,8 +47,9 @@
     <!-- 3. Form laporan -->
     <section id="s-form" class="step" hidden>
       <h2>Data laporan</h2>
-      <div class="warn" role="note"><b>⚠️ Hanya bisa upload 1 kali!</b>
-        <ul><li>Cek judul masing-masing laporan dan pastikan file benar.</li><li>Pastikan Laporan 1 dan 2 tidak tertukar dengan gurunya.</li><li>Salah kirim? Kamu harus minta guru/admin membuka kunci.</li></ul></div>
+      <p class="hint" id="reviseNote" hidden></p>
+      <div class="warn" role="note"><b>⚠️ Upload cukup 1 kali!</b>
+        <ul><li>Cek judul dan file masing-masing laporan sudah benar.</li><li>Pastikan Laporan 1 dan 2 tidak tertukar dengan gurunya.</li><li><b>Upload ulang hanya jika perlu revisi.</b> Kiriman terbaru yang dipakai. Setelah revisi, cetak ulang lembar validasi dan minta tanda tangan guru lagi.</li></ul></div>
       <form id="repForm" class="stack" novalidate>
         <fieldset class="rep"><legend id="lg1">Laporan 1</legend>
           <label>Judul laporan <input id="judul1" maxlength="150" placeholder="Tulis judul laporan ini"></label>
@@ -57,13 +59,40 @@
         <fieldset class="rep"><legend id="lg2">Laporan 2</legend>
           <label>Judul laporan <input id="judul2" maxlength="150" placeholder="Tulis judul laporan ini"></label>
           <p class="teacher" id="gt2"></p>
+          <p class="warn info" id="tema2" hidden></p>
           <label>File PDF (maks. 10 MB) <input type="file" id="file2" accept="application/pdf,.pdf"></label>
         </fieldset>
-        <label class="check"><input type="checkbox" id="agree"> <span>Saya sudah memeriksa kedua judul dan kedua file, dan saya mengerti laporan <b>hanya bisa diunggah 1 kali</b>.</span></label>
+        <p class="hint">Setiap kiriman tersimpan sebagai riwayat. Hindari mengirim berulang tanpa perlu.</p>
         <p class="error" id="formError" role="alert" hidden></p>
         <p id="progress" class="progress" role="status" hidden></p>
-        <button class="primary" id="btnSend" type="submit" disabled>Kirim laporan</button>
+        <button class="primary" id="btnSend" type="submit">Kirim laporan</button>
       </form>
+    </section>
+
+    <!-- Rekap Guru (password) -->
+    <section id="s-guru" class="step" hidden>
+      <div id="guruLoginBox">
+        <h2>Rekap Guru</h2>
+        <p class="hint">Masukkan password guru untuk melihat siswa yang sudah dan belum mengumpulkan laporan, per kelas.</p>
+        <form id="guruForm" class="stack" novalidate>
+          <label>Password <input id="gpw" type="password" autocomplete="current-password"></label>
+          <p class="error" id="guruError" role="alert" hidden></p>
+          <button class="primary" id="btnGuru" type="submit">Lihat rekap</button>
+        </form>
+      </div>
+      <div id="rekapBox" hidden>
+        <div class="rekap-head"><h2>Rekap per kelas</h2><div class="row2"><button type="button" id="btnRefresh">Segarkan</button><button type="button" id="btnLogout">Keluar</button></div></div>
+        <p class="hint" id="rekapTime"></p>
+        <div id="classCards" class="class-cards"></div>
+        <div class="filters">
+          <select id="gKelas" aria-label="Kelas"></select>
+          <select id="gStatus" aria-label="Status"><option value="">Semua status</option><option value="belum">Belum mengumpulkan</option><option value="sudah">Sudah mengumpulkan</option></select>
+          <input id="gSearch" type="search" placeholder="Cari nama atau NIS" aria-label="Cari">
+        </div>
+        <p id="gCount" class="hint"></p>
+        <ul id="gList" class="glist"></ul>
+        <button id="btnCopyBelum" class="ghost" type="button">📋 Salin daftar yang belum mengumpulkan</button>
+      </div>
     </section>
 
     <!-- 4. Hasil -->
@@ -72,7 +101,9 @@
       <dl class="info" id="resultInfo"></dl>
       <div id="links" class="links"></div>
       <button class="primary" id="btnPdf" type="button">⬇️ Unduh PDF Lembar Validasi</button>
-      <p class="hint">Cetak PDF, lalu minta tanda tangan guru pada kotak yang tersedia.</p>
+      <p class="hint">Cetak PDF, lalu minta tanda tangan guru pada kotak yang tersedia. Setelah revisi, cetak ulang karena QR-nya berubah.</p>
+      <p class="hint"><b>Unggah ulang hanya jika ada revisi.</b></p>
+      <button class="ghost" id="btnRevise" type="button">🔁 Revisi (unggah ulang)</button>
       <button class="ghost" id="btnDone" type="button">Selesai</button>
     </section>
   </main>

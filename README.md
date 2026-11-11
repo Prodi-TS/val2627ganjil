@@ -14,6 +14,8 @@ Spreadsheet data sudah dibuat di Google Drive akun yang terhubung dan tautannya 
 `https://docs.google.com/spreadsheets/d/1umK8HZnkFJPdJuooaNsyjYX6lyBtMqWvuka2Gpx7Kdo/edit`
 
 1. Buka spreadsheet itu. Sheet **Siswa** berisi 3 data contoh (NIS 1234501–1234503). Hapus data contoh, lalu isi 700 siswa dengan kolom `NIS | Nama | Kelas | PIN | Guru Laporan 1 | Guru Laporan 2`.
+
+Program Studi, Konsentrasi Keahlian, dan semester (kelas X = 1, XI = 3, XII = 5) otomatis dibaca dari nama kelas lewat fungsi `kelasInfo` di `script.js` (kata kunci TRANSMISI, TJAT, TKJ, RPL, DKV). Tahun ajaran diatur di `TAHUN_AJARAN`.
 2. **Format kolom NIS dan PIN sebagai teks** (*Format → Number → Plain text*) **sebelum** menempel data, agar angka 0 di depan tidak hilang. PIN boleh dikosongkan.
 3. Tab **Laporan** dan **Rekap** dibuat otomatis oleh script (menu *Siapkan sheet awal* dan *Bangun / perbarui rekap*).
 
@@ -51,15 +53,35 @@ Menu kedua di bagian atas situs. Siswa memasukkan NIS (+PIN) untuk melihat lapor
 
 "Status PDF" = siswa sudah menekan tombol Unduh PDF. Sistem tidak bisa mengetahui apakah PDF sudah dicetak atau ditandatangani guru.
 
-## Admin
-- **Membuka kunci siswa** (salah ketik, ganti file): menu **Validasi Laporan → Buka kunci siswa**, masukkan NIS. Baris di sheet Laporan dihapus, Rekap diperbarui, lalu siswa bisa mengunggah ulang lewat menu *Kumpulkan Laporan*.
-  - File lama tetap ada di Drive sebagai arsip, tetapi aksesnya dimatikan. Shortlink dan QR lama tidak berlaku lagi; siswa mendapat kode baru.
-  - Lembar validasi lama perlu dicetak ulang dan ditandatangani ulang guru.
-  - Jika Anda menghapus baris Laporan secara manual, jalankan **Bangun / perbarui rekap** agar Rekap ikut benar.
-- **Rekap**: sheet Laporan bisa langsung dipakai pivot atau Looker Studio.
+## Halaman "Rekap Guru" (dengan password)
+Menu ketiga di bagian atas situs. Guru memasukkan password, lalu melihat:
+- kartu per kelas: jumlah siswa yang **sudah** dan **belum** mengumpulkan beserta persentasenya (klik kartu untuk menyaring kelas);
+- daftar siswa per kelas dengan status Sudah/Belum (yang belum tampil paling atas), filter status, dan pencarian nama/NIS;
+- tombol **Salin daftar yang belum mengumpulkan** (siap ditempel ke grup WhatsApp kelas).
+
+**Mengatur password:** buka spreadsheet → menu **Validasi Laporan → Atur password guru** → isi password (minimal 6 karakter). Jalankan lagi untuk mengganti password.
+
+Keamanan:
+- Password tidak ada di kode maupun di GitHub. Server hanya menyimpan hash-nya di Script Properties, dan pemeriksaan dilakukan di server.
+- Password hanya ada di memori halaman; berpindah menu, menekan *Keluar*, atau menutup tab membuatnya hilang.
+- Ada satu password untuk semua guru, dan password itu membuka data **semua kelas**.
+- Setelah 10 kali salah, halaman rekap terkunci 10 menit (untuk semua orang, karena Apps Script tidak bisa mengenali alamat pengguna).
+- Jangan bagikan password ke siswa. Siapa pun yang tahu password bisa melihat nama dan status siswa.
+
+## Akun admin
+Website tidak punya login admin. "Admin" adalah akun Google yang memiliki spreadsheet dan men-deploy Apps Script. Akun itu yang membuka menu *Validasi Laporan* di spreadsheet, menjalankan Web App (*Execute as: Me*), dan menjadi pemilik folder PDF di Drive. Pastikan spreadsheet, script, dan deployment memakai akun yang sama.
+
+## Unggah ulang (revisi) dan riwayat kiriman
+- Petunjuk di web: **upload cukup 1 kali**; unggah ulang hanya jika perlu revisi, supaya data tidak menumpuk. Meski begitu, siswa **tetap bisa mengunggah ulang** lewat menu *Kumpulkan Laporan* (atau tombol **Revisi (unggah ulang)** di halaman hasil). Judul sebelumnya terisi otomatis.
+- Setiap kiriman **menambah satu baris** di sheet **Laporan** (riwayat, tidak ada yang dihapus). Kolom **Versi** menunjukkan urutan kiriman siswa itu.
+- **Yang dipakai selalu kiriman terbaru** (berdasarkan Timestamp, jadi aman walau barisnya diurutkan ulang): halaman Laporan Saya, PDF lembar validasi, sheet Rekap, Rekap Kelas, dan halaman Rekap Guru.
+- Sheet **Rekap** memiliki kolom **Jumlah Pengumpulan** (berapa kali siswa mengirim), dan halaman Rekap Guru memberi tanda `v2`, `v3`, dst. untuk siswa yang pernah merevisi.
+- Shortlink dan QR **lama tetap membuka file lama** (arsip), sedangkan kiriman baru mendapat kode baru. Jadi lembar validasi yang sudah ditandatangani guru tetap menunjuk file yang saat itu dinilai. Setelah revisi, siswa perlu **mencetak ulang lembar validasi** dan meminta tanda tangan guru lagi.
+- File PDF semua versi tetap ada di folder Drive siswa (nama file memuat tanggal dan jam kiriman).
+- Untuk Looker Studio: sheet **Laporan** berisi semua versi. Pakai sheet **Rekap** (satu baris per siswa, kiriman terbaru), atau saring Laporan agar hanya mengambil versi terbaru.
 
 ## Catatan
-- Siswa bisa 1 kali kirim. Batas 10 MB per PDF (ubah `MAX_BYTES` di Code.gs dan `MAX_MB` di script.js).
+- Batas 10 MB per PDF (ubah `MAX_BYTES` di Code.gs dan `MAX_MB` di script.js).
 - Kuota Drive: 1.400 PDF × 5 MB ≈ 7 GB. Pakai akun yang kuotanya cukup.
 - Jika Workspace sekolah melarang berbagi publik, script otomatis memakai akses "siapa saja di domain"; QR hanya terbuka untuk akun sekolah.
 - NIS tanpa PIN mudah ditebak. Isi kolom PIN untuk keamanan lebih.
@@ -67,4 +89,4 @@ Menu kedua di bagian atas situs. Siswa memasukkan NIS (+PIN) untuk melihat lapor
 - Library PDF/QR dimuat dari cdnjs. Jika jaringan sekolah memblokirnya, unduh `jspdf.umd.min.js` dan `qrcode.min.js` ke folder `lib/` lalu ubah alamat di `index.html`.
 
 ## Catatan kolom sheet Laporan
-Judul laporan 1 ada di kolom **Judul Laporan 1** (kolom E), judul laporan 2 di kolom **Judul Laporan 2** (kolom terakhir/P). Kolom ini sengaja ditaruh di akhir agar susunan kolom lain tidak bergeser. Di Looker Studio, keduanya bisa dipakai sebagai dimensi terpisah.
+Judul laporan 1 ada di kolom **Judul Laporan 1** (kolom E), judul laporan 2 di kolom **Judul Laporan 2** (kolom P), dan nomor kiriman di kolom **Versi** (kolom Q). Kolom ini sengaja ditaruh di akhir agar susunan kolom lain tidak bergeser. Di Looker Studio, keduanya bisa dipakai sebagai dimensi terpisah.

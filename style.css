@@ -48,3 +48,26 @@ button:disabled { opacity:.6; cursor:wait; }
 @media (prefers-color-scheme: dark) { .warn { background:#3a2f10; color:#ffd98a; border-color:#6b5513; border-left-color:#e0a100; } }
 .check { display:flex; gap:.6rem; align-items:flex-start; font-weight:500; font-size:.9rem; }
 .check input { width:22px; min-height:0; height:22px; flex:none; margin-top:.15rem; }
+
+/* Rekap guru */
+.tabs { grid-template-columns:repeat(3, 1fr); }
+.tabs button { font-size:.8rem; padding:.4rem .25rem; }
+.rekap-head { display:flex; justify-content:space-between; align-items:center; gap:.5rem; flex-wrap:wrap; }
+.rekap-head h2 { margin:0; }
+.row2 { display:flex; gap:.4rem; } .row2 button { min-height:36px; padding:.3rem .7rem; font-size:.85rem; }
+.class-cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:.6rem; margin:.6rem 0 1rem; }
+.class-card { display:grid; gap:.3rem; text-align:left; padding:.7rem; font-weight:500; min-height:0; }
+.class-card b { font-size:.95rem; } .class-card small { color:var(--muted); }
+.class-card.on { outline:2px solid var(--ok); }
+.bar { display:block; height:8px; background:var(--line); border-radius:99px; overflow:hidden; }
+.bar i { display:block; height:100%; background:var(--ok); }
+.filters { display:grid; gap:.5rem; }
+@media (min-width:520px) { .filters { grid-template-columns:1fr 1fr; } .filters input { grid-column:1 / -1; } }
+.glist { list-style:none; padding:0; margin:.5rem 0 .8rem; border:1px solid var(--line); border-radius:12px; background:var(--surface); }
+.glist li { display:flex; justify-content:space-between; align-items:center; gap:.6rem; padding:.6rem .8rem; border-bottom:1px solid var(--line); }
+.glist li:last-child { border:0; } .glist small { display:block; color:var(--muted); }
+.badge { padding:.2rem .6rem; border-radius:99px; font-size:.78rem; font-weight:700; white-space:nowrap; }
+.badge.ok { background:rgba(15,139,109,.16); color:var(--ok); } .badge.no { background:rgba(200,67,58,.16); color:var(--bad); }
+
+.warn.info { background:#e6f0ff; color:#14325e; border-color:#9dbdf0; border-left-color:#3b78d8; }
+@media (prefers-color-scheme: dark) { .warn.info { background:#16284a; color:#bcd4ff; border-color:#2c4a82; border-left-color:#3b78d8; } }
