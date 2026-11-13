@@ -95,8 +95,8 @@ function onYes() {
   $("reviseNote").hidden = !r;
   if (r) $("reviseNote").textContent = `Kamu sudah mengumpulkan pada ${fmtDate(r.timestamp)} (versi ${r.versi || 1}). Gunakan unggah ulang hanya untuk revisi; kiriman baru akan menjadi versi terbaru.`;
   const hasLamp = !!(r && r.lampiran);   // lampiran dari kiriman sebelumnya
-  $("rmLampWrap").hidden = !hasLamp;
-  $("lampNote").textContent = hasLamp ? "Lampiran kiriman sebelumnya tetap dipakai jika kamu tidak memilih file baru." : 'Isi hanya jika ada lampiran. Jika tidak ada, di lembar validasi tertulis "Lampiran : -".';
+  $("lampYa").checked = hasLamp; $("lampTidak").checked = false; toggleLamp();
+  $("lampNote").textContent = hasLamp ? "Lampiran kiriman sebelumnya tetap dipakai jika kamu tidak memilih file baru." : "";
   $("lg1").textContent = REPORT_LABELS[0]; $("lg2").textContent = REPORT_LABELS[1];
   $("gt1").textContent = "Guru: " + g[0]; $("gt2").textContent = "Guru: " + g[1];
   const tema = String((state.student && state.student.tema) || "").trim();   // tema dari kolom G sheet Siswa
@@ -104,6 +104,7 @@ function onYes() {
   $("tema2").innerHTML = `💡 Tema proyek kamu: <b>${esc(tema)}</b>. Pastikan laporan dan judul sesuai tema ini.`;
   show("s-form");
 }
+function toggleLamp() { $("lampBox").hidden = !$("lampYa").checked; }
 function resetAll() {
   const mode = state.mode;
   state = { nis: "", pin: "", student: null, record: null, up: {}, busy: false, mode };
@@ -123,7 +124,9 @@ async function validateForm() {
     if (f.size > MAX_MB * 1024 * 1024) return `${REPORT_LABELS[n - 1]} lebih dari ${MAX_MB} MB.`;
     if (!(await isPdf(f))) return `${REPORT_LABELS[n - 1]} bukan file PDF yang valid.`;
   }
-  const f3 = $("file3").files[0];
+  if (!$("lampYa").checked && !$("lampTidak").checked) return "Pilih Ya atau Tidak untuk lampiran portofolio.";
+  const f3 = $("lampYa").checked ? $("file3").files[0] : null;
+  if ($("lampYa").checked && !f3 && !(state.record && state.record.lampiran)) return "Pilih file lampiran portofolio, atau pilih Tidak.";
   if (f3) {
     if (f3.size > MAX_MB * 1024 * 1024) return `Lampiran lebih dari ${MAX_MB} MB.`;
     if (!(await isPdf(f3))) return "Lampiran bukan file PDF yang valid.";
@@ -149,14 +152,14 @@ async function onSend(e) {
       if (!d.success) throw new Error(d.error || "Upload gagal.");
       state.up[n] = { file: f, id: d.fileId };
     }
-    const f3 = $("file3").files[0];
+    const f3 = $("lampYa").checked ? $("file3").files[0] : null;   // "Tidak" = tanpa lampiran
     if (f3 && !(state.up[3] && state.up[3].file === f3)) {
       $("progress").textContent = "Mengunggah lampiran…";
       const d3 = await post({ action: "upload", nis: state.nis, pin: state.pin, part: 3, judul: "lampiran", data: await toBase64(f3) });
       if (!d3.success) throw new Error(d3.error || "Upload lampiran gagal.");
       state.up[3] = { file: f3, id: d3.fileId };
     }
-    const keepLamp = !f3 && !$("rmLamp").checked && !!(state.record && state.record.lampiran);
+    const keepLamp = !f3 && $("lampYa").checked && !!(state.record && state.record.lampiran);
     $("progress").textContent = "Menyimpan data…";
     const d = await post({ action: "submit", nis: state.nis, pin: state.pin, judul1: $("judul1").value.trim(), judul2: $("judul2").value.trim(), fileId1: state.up[1].id, fileId2: state.up[2].id, fileId3: f3 ? state.up[3].id : "", keepLampiran: keepLamp });
     if (!d.success) throw new Error(d.error || "Gagal menyimpan.");
@@ -171,8 +174,8 @@ function showResult(already) {
   $("resultTitle").textContent = already ? "✅ Laporan sudah dikumpulkan" : "✅ Laporan terkumpul";
   $("resultInfo").innerHTML = `<dt>NIS</dt><dd>${esc(r.nis)}</dd><dt>Nama</dt><dd>${esc(r.nama)}</dd><dt>Kelas</dt><dd>${esc(r.kelas)}</dd><dt>Tanggal</dt><dd>${fmtDate(r.timestamp)}</dd><dt>Versi kiriman</dt><dd>${r.versi || 1}</dd>`;
   const items = [{ c: r.codes[0], l: REPORT_LABELS[0], i: 0 }, { c: r.codes[1], l: REPORT_LABELS[1], i: 1 }];
-  if (r.lampiran) items.push({ c: r.lampiran, l: "Lampiran " + REPORT_LABELS[1], i: 2 });
-  $("links").innerHTML = items.map((x) => `<div class="link-card"><img alt="QR ${esc(x.l)}" src="${qrPng(shortUrl(x.c))}"><div><b>${esc(x.l)}</b>${x.i < 2 ? `<small>Judul: ${esc(r.judul[x.i])}</small><small>Guru: ${esc(r.guru[x.i])}</small>` : ""}<code>${esc(shortUrl(x.c))}</code><br><button type="button" data-copy="${esc(x.c)}">Salin tautan</button></div></div>`).join("") + (r.lampiran ? "" : `<p class="hint">Lampiran : -</p>`);
+  if (r.lampiran) items.push({ c: r.lampiran, l: "Lampiran Portofolio", i: 2 });
+  $("links").innerHTML = items.map((x) => `<div class="link-card"><img alt="QR ${esc(x.l)}" src="${qrPng(shortUrl(x.c))}"><div><b>${esc(x.l)}</b>${x.i < 2 ? `<small>Judul: ${esc(r.judul[x.i])}</small><small>Guru: ${esc(r.guru[x.i])}</small>` : ""}<code>${esc(shortUrl(x.c))}</code><br><button type="button" data-copy="${esc(x.c)}">Salin tautan</button></div></div>`).join("") + (r.lampiran ? "" : `<p class="hint">Lampiran portofolio : -</p>`);
   $("links").querySelectorAll("[data-copy]").forEach((b) => b.addEventListener("click", async () => {
     try { await navigator.clipboard.writeText(shortUrl(b.dataset.copy)); toast("Tautan disalin ✓"); } catch (e) { toast("Salin manual dari teks tautan.", true); }
   }));
@@ -224,11 +227,11 @@ function makePdf(r) {
     const tema = String((state.student && state.student.tema) || "").trim();   // tema proyek (kolom G sheet Siswa) di blok Laporan Proyek 2
     if (i === 1 && tema && !tema.startsWith("(")) doc.setFont("helvetica", "normal").setFontSize(9).text(doc.splitTextToSize("Tema: " + tema, 100).slice(0, 1), L + W - 4, by + 8, { align: "right" });
     doc.setFont("helvetica", "normal").setFontSize(10).text("Guru: " + r.guru[i], L + 4, by + 14);
-    if (i === 1 && !lamp) doc.setFontSize(9).text("Lampiran : -", L + W - 4, by + 14, { align: "right" });
+    if (i === 1 && !lamp) doc.setFontSize(9).text("Lampiran Portofolio : -", L + W - 4, by + 14, { align: "right" });
     doc.setFont("helvetica", "bold").setFontSize(10).text(doc.splitTextToSize("Judul: " + r.judul[i], W - 8).slice(0, 2), L + 4, by + 20);
     doc.setFont("helvetica", "normal");
     if (lamp) {
-      doc.setFontSize(7).text("Laporan", L + 4, by + 26.5); doc.text("Lampiran", L + 44, by + 26.5);
+      doc.setFontSize(7).text("Laporan", L + 4, by + 26.5); doc.text("Lampiran Portofolio", L + 44, by + 26.5);
       doc.addImage(qrPng(url, 400), "PNG", L + 4, by + 28, 34, 34);
       doc.addImage(qrPng(lamp, 400), "PNG", L + 44, by + 28, 34, 34);
       doc.setFontSize(6.5).text(doc.splitTextToSize(url, 36), L + 4, by + 65);
@@ -368,6 +371,7 @@ function init() {
   $("guruForm").addEventListener("submit", onGuru);
   $("btnLogout").addEventListener("click", guruReset);
   $("btnRefresh").addEventListener("click", async () => { try { await loadRekap(state.gpw); toast("Rekap diperbarui ✓"); } catch (ex) { toast(ex.message, true); } });
+  ["lampYa", "lampTidak"].forEach((id) => $(id).addEventListener("change", toggleLamp));
   document.querySelectorAll("#viewSeg button").forEach((b) => b.addEventListener("click", () => { state.view = b.dataset.view; $("gKelas").value = ""; $("gTema").value = ""; renderRekap(); }));
   ["gKelas", "gStatus", "gTema"].forEach((id) => $(id).addEventListener("change", renderRekap));
   $("gSearch").addEventListener("input", renderRekapList);

@@ -96,9 +96,9 @@ Di halaman Rekap Guru ada pilihan **Per kelas (walas)** dan **Per guru Proyek 2*
 
 Pada tampilan **Per guru Proyek 2** ada filter **Tema** (dari kolom G sheet Siswa, "Tema Proyek Rekayasa Teknologi"). Kartu guru, daftar siswa, dan tombol salin ikut menyesuaikan tema yang dipilih, berguna bila satu guru mengajar beda jenjang atau tema. Siswa tanpa tema tampil sebagai "Tanpa tema". Perlu deploy ulang `Code.gs`.
 
-## Lampiran Laporan Proyek 2 (opsional)
-Di formulir ada satu kolom unggah tambahan **Lampiran** (PDF, maks. 10 MB) di bawah Laporan Proyek 2. Sifatnya opsional.
-- **Ada lampiran:** di lembar validasi blok Laporan Proyek 2 mendapat kolom tambahan berisi QR dan tautan lampiran, di samping QR laporan. Kotak tanda tangan menyempit menyesuaikan.
-- **Tidak ada lampiran:** tampilan tetap seperti semula dan tertulis **Lampiran : -** di blok Laporan Proyek 2.
-- **Revisi:** jika siswa unggah ulang tanpa memilih file lampiran baru, lampiran kiriman sebelumnya tetap dipakai. Ada kotak centang "Hapus lampiran dari kiriman sebelumnya" untuk membuangnya.
-- **Sheet Laporan:** tiga kolom baru di paling kanan (`Link Lampiran`, `Kode Lampiran`, `File ID Lampiran`) ditambahkan otomatis. Perlu deploy ulang `Code.gs` (New version), lalu jalankan `setupSheets` sekali agar header baru muncul (atau biarkan: header ditambah otomatis saat ada kiriman).
+## Lampiran portofolio (opsional)
+Di formulir, di bawah Laporan Proyek 2, ada pertanyaan **"Apakah kamu ingin upload lampiran portofolio?"** dengan pilihan **Ya / Tidak**. Siswa wajib memilih salah satu.
+- **Ya:** kolom unggah PDF lampiran muncul (maks. 10 MB). Di lembar validasi, blok Laporan Proyek 2 mendapat kolom tambahan berisi QR dan tautan "Lampiran Portofolio" di samping QR laporan. Kotak tanda tangan menyempit menyesuaikan.
+- **Tidak:** tidak ada unggahan tambahan. Tampilan lembar tetap seperti semula dan tertulis **Lampiran Portofolio : -** di blok Laporan Proyek 2.
+- **Revisi:** jika sebelumnya ada lampiran, pilihan Ya terpilih otomatis dan lampiran lama tetap dipakai kecuali siswa memilih file baru. Memilih **Tidak** membuang lampiran dari kiriman terbaru.
+- **Sheet Laporan:** tiga kolom baru di paling kanan (`Link Lampiran`, `Kode Lampiran`, `File ID Lampiran`) ditambahkan otomatis. Perlu deploy ulang `Code.gs` (New version).

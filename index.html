@@ -60,9 +60,15 @@
           <p class="teacher" id="gt2"></p>
           <p class="warn info" id="tema2" hidden></p>
           <label>File PDF (maks. 10 MB) <input type="file" id="file2" accept="application/pdf,.pdf"></label>
-          <label>Lampiran (opsional, PDF maks. 10 MB) <input type="file" id="file3" accept="application/pdf,.pdf"></label>
-          <p class="hint" id="lampNote">Isi hanya jika ada lampiran. Jika tidak ada, di lembar validasi tertulis "Lampiran : -".</p>
-          <label class="chk" id="rmLampWrap" hidden><input type="checkbox" id="rmLamp"> Hapus lampiran dari kiriman sebelumnya</label>
+          <div class="choice" role="radiogroup" aria-labelledby="lampQ">
+            <span id="lampQ">Apakah kamu ingin upload lampiran portofolio?</span>
+            <label class="chk"><input type="radio" name="lamp" id="lampYa" value="ya"> Ya</label>
+            <label class="chk"><input type="radio" name="lamp" id="lampTidak" value="tidak"> Tidak</label>
+          </div>
+          <div id="lampBox" hidden>
+            <label>File lampiran portofolio (PDF, maks. 10 MB) <input type="file" id="file3" accept="application/pdf,.pdf"></label>
+            <p class="hint" id="lampNote"></p>
+          </div>
         </fieldset>
         <p class="hint">Setiap kiriman tersimpan sebagai riwayat. Hindari mengirim berulang tanpa perlu.</p>
         <p class="error" id="formError" role="alert" hidden></p>
