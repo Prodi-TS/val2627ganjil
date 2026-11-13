@@ -94,7 +94,7 @@ function onYes() {
   if (r) { $("judul1").value = r.judul[0] || ""; $("judul2").value = r.judul[1] || ""; }
   $("reviseNote").hidden = !r;
   if (r) $("reviseNote").textContent = `Kamu sudah mengumpulkan pada ${fmtDate(r.timestamp)} (versi ${r.versi || 1}). Gunakan unggah ulang hanya untuk revisi; kiriman baru akan menjadi versi terbaru.`;
-  const hasLamp = !!(r && r.codes && r.codes[2]);   // lampiran dari kiriman sebelumnya
+  const hasLamp = !!(r && r.lampiran);   // lampiran dari kiriman sebelumnya
   $("rmLampWrap").hidden = !hasLamp;
   $("lampNote").textContent = hasLamp ? "Lampiran kiriman sebelumnya tetap dipakai jika kamu tidak memilih file baru." : 'Isi hanya jika ada lampiran. Jika tidak ada, di lembar validasi tertulis "Lampiran : -".';
   $("lg1").textContent = REPORT_LABELS[0]; $("lg2").textContent = REPORT_LABELS[1];
@@ -156,7 +156,7 @@ async function onSend(e) {
       if (!d3.success) throw new Error(d3.error || "Upload lampiran gagal.");
       state.up[3] = { file: f3, id: d3.fileId };
     }
-    const keepLamp = !f3 && !$("rmLamp").checked && !!(state.record && state.record.codes && state.record.codes[2]);
+    const keepLamp = !f3 && !$("rmLamp").checked && !!(state.record && state.record.lampiran);
     $("progress").textContent = "Menyimpan data…";
     const d = await post({ action: "submit", nis: state.nis, pin: state.pin, judul1: $("judul1").value.trim(), judul2: $("judul2").value.trim(), fileId1: state.up[1].id, fileId2: state.up[2].id, fileId3: f3 ? state.up[3].id : "", keepLampiran: keepLamp });
     if (!d.success) throw new Error(d.error || "Gagal menyimpan.");
@@ -170,10 +170,11 @@ function showResult(already) {
   const r = state.record;
   $("resultTitle").textContent = already ? "✅ Laporan sudah dikumpulkan" : "✅ Laporan terkumpul";
   $("resultInfo").innerHTML = `<dt>NIS</dt><dd>${esc(r.nis)}</dd><dt>Nama</dt><dd>${esc(r.nama)}</dd><dt>Kelas</dt><dd>${esc(r.kelas)}</dd><dt>Tanggal</dt><dd>${fmtDate(r.timestamp)}</dd><dt>Versi kiriman</dt><dd>${r.versi || 1}</dd>`;
-  const labels = [REPORT_LABELS[0], REPORT_LABELS[1], "Lampiran " + REPORT_LABELS[1]];
-  $("links").innerHTML = r.codes.map((c, i) => !c ? "" : `<div class="link-card"><img alt="QR ${esc(labels[i])}" src="${qrPng(shortUrl(c))}"><div><b>${esc(labels[i])}</b>${i < 2 ? `<small>Judul: ${esc(r.judul[i])}</small><small>Guru: ${esc(r.guru[i])}</small>` : ""}<code>${esc(shortUrl(c))}</code><br><button type="button" data-copy="${i}">Salin tautan</button></div></div>`).join("") + (r.codes[2] ? "" : `<p class="hint">Lampiran : -</p>`);
+  const items = [{ c: r.codes[0], l: REPORT_LABELS[0], i: 0 }, { c: r.codes[1], l: REPORT_LABELS[1], i: 1 }];
+  if (r.lampiran) items.push({ c: r.lampiran, l: "Lampiran " + REPORT_LABELS[1], i: 2 });
+  $("links").innerHTML = items.map((x) => `<div class="link-card"><img alt="QR ${esc(x.l)}" src="${qrPng(shortUrl(x.c))}"><div><b>${esc(x.l)}</b>${x.i < 2 ? `<small>Judul: ${esc(r.judul[x.i])}</small><small>Guru: ${esc(r.guru[x.i])}</small>` : ""}<code>${esc(shortUrl(x.c))}</code><br><button type="button" data-copy="${esc(x.c)}">Salin tautan</button></div></div>`).join("") + (r.lampiran ? "" : `<p class="hint">Lampiran : -</p>`);
   $("links").querySelectorAll("[data-copy]").forEach((b) => b.addEventListener("click", async () => {
-    try { await navigator.clipboard.writeText(shortUrl(r.codes[b.dataset.copy])); toast("Tautan disalin ✓"); } catch (e) { toast("Salin manual dari teks tautan.", true); }
+    try { await navigator.clipboard.writeText(shortUrl(b.dataset.copy)); toast("Tautan disalin ✓"); } catch (e) { toast("Salin manual dari teks tautan.", true); }
   }));
   show("s-result");
 }
@@ -217,7 +218,7 @@ function makePdf(r) {
   const top = y + 6, blockH = 74;
   r.codes.slice(0, 2).forEach((code, i) => {
     const by = top + i * (blockH + 5), url = shortUrl(code);
-    const lamp = i === 1 && r.codes[2] ? shortUrl(r.codes[2]) : "";   // lampiran Laporan Proyek 2 (opsional): kolom tambahan muncul jika ada
+    const lamp = i === 1 && r.lampiran ? shortUrl(r.lampiran) : "";   // lampiran Laporan Proyek 2 (opsional): kolom tambahan muncul jika ada
     doc.setDrawColor(120).setLineWidth(0.3).rect(L, by, W, blockH);
     doc.setFont("helvetica", "bold").setFontSize(12).text(`${REPORT_LABELS[i]}`, L + 4, by + 8);
     const tema = String((state.student && state.student.tema) || "").trim();   // tema proyek (kolom G sheet Siswa) di blok Laporan Proyek 2
