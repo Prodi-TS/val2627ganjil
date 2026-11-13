@@ -94,6 +94,9 @@ function onYes() {
   if (r) { $("judul1").value = r.judul[0] || ""; $("judul2").value = r.judul[1] || ""; }
   $("reviseNote").hidden = !r;
   if (r) $("reviseNote").textContent = `Kamu sudah mengumpulkan pada ${fmtDate(r.timestamp)} (versi ${r.versi || 1}). Gunakan unggah ulang hanya untuk revisi; kiriman baru akan menjadi versi terbaru.`;
+  const hasLamp = !!(r && r.codes && r.codes[2]);   // lampiran dari kiriman sebelumnya
+  $("rmLampWrap").hidden = !hasLamp;
+  $("lampNote").textContent = hasLamp ? "Lampiran kiriman sebelumnya tetap dipakai jika kamu tidak memilih file baru." : 'Isi hanya jika ada lampiran. Jika tidak ada, di lembar validasi tertulis "Lampiran : -".';
   $("lg1").textContent = REPORT_LABELS[0]; $("lg2").textContent = REPORT_LABELS[1];
   $("gt1").textContent = "Guru: " + g[0]; $("gt2").textContent = "Guru: " + g[1];
   const tema = String((state.student && state.student.tema) || "").trim();   // tema dari kolom G sheet Siswa
@@ -120,6 +123,12 @@ async function validateForm() {
     if (f.size > MAX_MB * 1024 * 1024) return `${REPORT_LABELS[n - 1]} lebih dari ${MAX_MB} MB.`;
     if (!(await isPdf(f))) return `${REPORT_LABELS[n - 1]} bukan file PDF yang valid.`;
   }
+  const f3 = $("file3").files[0];
+  if (f3) {
+    if (f3.size > MAX_MB * 1024 * 1024) return `Lampiran lebih dari ${MAX_MB} MB.`;
+    if (!(await isPdf(f3))) return "Lampiran bukan file PDF yang valid.";
+    if ([1, 2].some((n) => $("file" + n).files[0].name === f3.name && $("file" + n).files[0].size === f3.size)) return "Lampiran tampaknya sama dengan salah satu laporan. Pilih file yang berbeda.";
+  }
   if ($("file1").files[0].name === $("file2").files[0].name && $("file1").files[0].size === $("file2").files[0].size) return "File laporan 1 dan 2 tampaknya sama. Pilih dua file berbeda.";
   return "";
 }
@@ -140,8 +149,16 @@ async function onSend(e) {
       if (!d.success) throw new Error(d.error || "Upload gagal.");
       state.up[n] = { file: f, id: d.fileId };
     }
+    const f3 = $("file3").files[0];
+    if (f3 && !(state.up[3] && state.up[3].file === f3)) {
+      $("progress").textContent = "Mengunggah lampiran…";
+      const d3 = await post({ action: "upload", nis: state.nis, pin: state.pin, part: 3, judul: "lampiran", data: await toBase64(f3) });
+      if (!d3.success) throw new Error(d3.error || "Upload lampiran gagal.");
+      state.up[3] = { file: f3, id: d3.fileId };
+    }
+    const keepLamp = !f3 && !$("rmLamp").checked && !!(state.record && state.record.codes && state.record.codes[2]);
     $("progress").textContent = "Menyimpan data…";
-    const d = await post({ action: "submit", nis: state.nis, pin: state.pin, judul1: $("judul1").value.trim(), judul2: $("judul2").value.trim(), fileId1: state.up[1].id, fileId2: state.up[2].id });
+    const d = await post({ action: "submit", nis: state.nis, pin: state.pin, judul1: $("judul1").value.trim(), judul2: $("judul2").value.trim(), fileId1: state.up[1].id, fileId2: state.up[2].id, fileId3: f3 ? state.up[3].id : "", keepLampiran: keepLamp });
     if (!d.success) throw new Error(d.error || "Gagal menyimpan.");
     state.record = d.record; state.up = {}; showResult(false);
   } catch (ex) { setErr("formError", ex.message + " Kamu bisa menekan Kirim lagi (file yang sudah terunggah tidak diulang)."); }
@@ -153,7 +170,8 @@ function showResult(already) {
   const r = state.record;
   $("resultTitle").textContent = already ? "✅ Laporan sudah dikumpulkan" : "✅ Laporan terkumpul";
   $("resultInfo").innerHTML = `<dt>NIS</dt><dd>${esc(r.nis)}</dd><dt>Nama</dt><dd>${esc(r.nama)}</dd><dt>Kelas</dt><dd>${esc(r.kelas)}</dd><dt>Tanggal</dt><dd>${fmtDate(r.timestamp)}</dd><dt>Versi kiriman</dt><dd>${r.versi || 1}</dd>`;
-  $("links").innerHTML = r.codes.map((c, i) => `<div class="link-card"><img alt="QR ${esc(REPORT_LABELS[i])}" src="${qrPng(shortUrl(c))}"><div><b>${esc(REPORT_LABELS[i])}</b><small>Judul: ${esc(r.judul[i])}</small><small>Guru: ${esc(r.guru[i])}</small><code>${esc(shortUrl(c))}</code><br><button type="button" data-copy="${i}">Salin tautan</button></div></div>`).join("");
+  const labels = [REPORT_LABELS[0], REPORT_LABELS[1], "Lampiran " + REPORT_LABELS[1]];
+  $("links").innerHTML = r.codes.map((c, i) => !c ? "" : `<div class="link-card"><img alt="QR ${esc(labels[i])}" src="${qrPng(shortUrl(c))}"><div><b>${esc(labels[i])}</b>${i < 2 ? `<small>Judul: ${esc(r.judul[i])}</small><small>Guru: ${esc(r.guru[i])}</small>` : ""}<code>${esc(shortUrl(c))}</code><br><button type="button" data-copy="${i}">Salin tautan</button></div></div>`).join("") + (r.codes[2] ? "" : `<p class="hint">Lampiran : -</p>`);
   $("links").querySelectorAll("[data-copy]").forEach((b) => b.addEventListener("click", async () => {
     try { await navigator.clipboard.writeText(shortUrl(r.codes[b.dataset.copy])); toast("Tautan disalin ✓"); } catch (e) { toast("Salin manual dari teks tautan.", true); }
   }));
@@ -197,19 +215,30 @@ function makePdf(r) {
 
   // Dua blok laporan: QR di kiri, kotak tanda tangan guru di kanan
   const top = y + 6, blockH = 74;
-  r.codes.forEach((code, i) => {
+  r.codes.slice(0, 2).forEach((code, i) => {
     const by = top + i * (blockH + 5), url = shortUrl(code);
+    const lamp = i === 1 && r.codes[2] ? shortUrl(r.codes[2]) : "";   // lampiran Laporan Proyek 2 (opsional): kolom tambahan muncul jika ada
     doc.setDrawColor(120).setLineWidth(0.3).rect(L, by, W, blockH);
     doc.setFont("helvetica", "bold").setFontSize(12).text(`${REPORT_LABELS[i]}`, L + 4, by + 8);
     const tema = String((state.student && state.student.tema) || "").trim();   // tema proyek (kolom G sheet Siswa) di blok Laporan Proyek 2
     if (i === 1 && tema && !tema.startsWith("(")) doc.setFont("helvetica", "normal").setFontSize(9).text(doc.splitTextToSize("Tema: " + tema, 100).slice(0, 1), L + W - 4, by + 8, { align: "right" });
     doc.setFont("helvetica", "normal").setFontSize(10).text("Guru: " + r.guru[i], L + 4, by + 14);
-    doc.setFont("helvetica", "bold").text(doc.splitTextToSize("Judul: " + r.judul[i], W - 8).slice(0, 2), L + 4, by + 20);
+    if (i === 1 && !lamp) doc.setFontSize(9).text("Lampiran : -", L + W - 4, by + 14, { align: "right" });
+    doc.setFont("helvetica", "bold").setFontSize(10).text(doc.splitTextToSize("Judul: " + r.judul[i], W - 8).slice(0, 2), L + 4, by + 20);
     doc.setFont("helvetica", "normal");
-    doc.addImage(qrPng(url, 400), "PNG", L + 4, by + 28, 34, 34);
-    doc.setFontSize(7.5).text(doc.splitTextToSize(url, 58), L + 4, by + 65);
-    doc.setFontSize(7).text("Pindai QR / buka tautan untuk melihat laporan", L + 4, by + 71);
-    const sx = L + 62, sw = W - 66;
+    if (lamp) {
+      doc.setFontSize(7).text("Laporan", L + 4, by + 26.5); doc.text("Lampiran", L + 44, by + 26.5);
+      doc.addImage(qrPng(url, 400), "PNG", L + 4, by + 28, 34, 34);
+      doc.addImage(qrPng(lamp, 400), "PNG", L + 44, by + 28, 34, 34);
+      doc.setFontSize(6.5).text(doc.splitTextToSize(url, 36), L + 4, by + 65);
+      doc.text(doc.splitTextToSize(lamp, 36), L + 44, by + 65);
+      doc.setFontSize(7).text("Pindai QR / buka tautan untuk melihat laporan", L + 4, by + 72);
+    } else {
+      doc.addImage(qrPng(url, 400), "PNG", L + 4, by + 28, 34, 34);
+      doc.setFontSize(7.5).text(doc.splitTextToSize(url, 58), L + 4, by + 65);
+      doc.setFontSize(7).text("Pindai QR / buka tautan untuk melihat laporan", L + 4, by + 71);
+    }
+    const sx = L + (lamp ? 84 : 62), sw = W - (lamp ? 88 : 66);
     doc.setFontSize(10).text("Validasi Guru", sx, by + 29);
     doc.rect(sx, by + 31, sw, 24);
     doc.setFontSize(9).text("Tanda tangan", sx + 2, by + 35);

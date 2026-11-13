@@ -40,8 +40,8 @@ Upload `index.html`, `style.css`, `script.js` ke repository → **Settings → P
 - Tiap laporan mendapat kode 6 karakter. Shortlink `situs/#/KODE` membuka Apps Script, lalu dialihkan ke file Drive. QR berisi shortlink itu.
 - Tombol **Unduh PDF** membuat lembar validasi di browser: identitas, 2 shortlink, 2 QR, dan kotak tanda tangan kosong untuk guru (ditandatangani basah setelah dicetak).
 
-## Halaman "Laporan Saya"
-Menu kedua di bagian atas situs. Siswa memasukkan NIS (+PIN) untuk melihat laporan yang sudah terkumpul, menyalin shortlink, melihat QR, dan **mengunduh ulang PDF lembar validasi** kapan saja (tanggal di PDF tetap tanggal pengumpulan asli).
+## Unduh ulang lembar validasi
+Tidak ada halaman terpisah. Siswa yang sudah pernah mengumpulkan cukup memasukkan NIS (+PIN) di **Kumpulkan Laporan**: situs langsung menampilkan hasil sebelumnya (shortlink, QR) beserta tombol **Unduh PDF**, dan tombol Revisi jika perlu unggah ulang. Tanggal di PDF tetap tanggal pengumpulan asli.
 
 ## Rekap untuk wali kelas
 1. Setelah Code.gs terpasang, **muat ulang spreadsheet**. Muncul menu **Validasi Laporan → Bangun / perbarui rekap** (pertama kali akan meminta izin). Jalankan setiap daftar siswa berubah.
@@ -74,7 +74,7 @@ Website tidak punya login admin. "Admin" adalah akun Google yang memiliki spread
 ## Unggah ulang (revisi) dan riwayat kiriman
 - Petunjuk di web: **upload cukup 1 kali**; unggah ulang hanya jika perlu revisi, supaya data tidak menumpuk. Meski begitu, siswa **tetap bisa mengunggah ulang** lewat menu *Kumpulkan Laporan* (atau tombol **Revisi (unggah ulang)** di halaman hasil). Judul sebelumnya terisi otomatis.
 - Setiap kiriman **menambah satu baris** di sheet **Laporan** (riwayat, tidak ada yang dihapus). Kolom **Versi** menunjukkan urutan kiriman siswa itu.
-- **Yang dipakai selalu kiriman terbaru** (berdasarkan Timestamp, jadi aman walau barisnya diurutkan ulang): halaman Laporan Saya, PDF lembar validasi, sheet Rekap, Rekap Kelas, dan halaman Rekap Guru.
+- **Yang dipakai selalu kiriman terbaru** (berdasarkan Timestamp, jadi aman walau barisnya diurutkan ulang): tampilan hasil pengumpulan, PDF lembar validasi, sheet Rekap, Rekap Kelas, dan halaman Rekap Guru.
 - Sheet **Rekap** memiliki kolom **Jumlah Pengumpulan** (berapa kali siswa mengirim), dan halaman Rekap Guru memberi tanda `v2`, `v3`, dst. untuk siswa yang pernah merevisi.
 - Shortlink dan QR **lama tetap membuka file lama** (arsip), sedangkan kiriman baru mendapat kode baru. Jadi lembar validasi yang sudah ditandatangani guru tetap menunjuk file yang saat itu dinilai. Setelah revisi, siswa perlu **mencetak ulang lembar validasi** dan meminta tanda tangan guru lagi.
 - File PDF semua versi tetap ada di folder Drive siswa (nama file memuat tanggal dan jam kiriman).
@@ -90,3 +90,15 @@ Website tidak punya login admin. "Admin" adalah akun Google yang memiliki spread
 
 ## Catatan kolom sheet Laporan
 Judul laporan 1 ada di kolom **Judul Laporan 1** (kolom E), judul laporan 2 di kolom **Judul Laporan 2** (kolom P), dan nomor kiriman di kolom **Versi** (kolom Q). Kolom ini sengaja ditaruh di akhir agar susunan kolom lain tidak bergeser. Di Looker Studio, keduanya bisa dipakai sebagai dimensi terpisah.
+
+## Rekap Guru: dua tampilan
+Di halaman Rekap Guru ada pilihan **Per kelas (walas)** dan **Per guru Proyek 2**. Tampilan kelas menampilkan guru Proyek 1 di tiap kartu kelas (dianggap sama dalam satu kelas). Tampilan guru Proyek 2 mengelompokkan siswa berdasarkan kolom *Guru Laporan 2*, lengkap dengan kelasnya. Tombol salin daftar yang belum mengumpulkan mengikuti tampilan dan pilihan yang aktif. Perlu deploy ulang `Code.gs` (New version).
+
+Pada tampilan **Per guru Proyek 2** ada filter **Tema** (dari kolom G sheet Siswa, "Tema Proyek Rekayasa Teknologi"). Kartu guru, daftar siswa, dan tombol salin ikut menyesuaikan tema yang dipilih, berguna bila satu guru mengajar beda jenjang atau tema. Siswa tanpa tema tampil sebagai "Tanpa tema". Perlu deploy ulang `Code.gs`.
+
+## Lampiran Laporan Proyek 2 (opsional)
+Di formulir ada satu kolom unggah tambahan **Lampiran** (PDF, maks. 10 MB) di bawah Laporan Proyek 2. Sifatnya opsional.
+- **Ada lampiran:** di lembar validasi blok Laporan Proyek 2 mendapat kolom tambahan berisi QR dan tautan lampiran, di samping QR laporan. Kotak tanda tangan menyempit menyesuaikan.
+- **Tidak ada lampiran:** tampilan tetap seperti semula dan tertulis **Lampiran : -** di blok Laporan Proyek 2.
+- **Revisi:** jika siswa unggah ulang tanpa memilih file lampiran baru, lampiran kiriman sebelumnya tetap dipakai. Ada kotak centang "Hapus lampiran dari kiriman sebelumnya" untuk membuangnya.
+- **Sheet Laporan:** tiga kolom baru di paling kanan (`Link Lampiran`, `Kode Lampiran`, `File ID Lampiran`) ditambahkan otomatis. Perlu deploy ulang `Code.gs` (New version), lalu jalankan `setupSheets` sekali agar header baru muncul (atau biarkan: header ditambah otomatis saat ada kiriman).
